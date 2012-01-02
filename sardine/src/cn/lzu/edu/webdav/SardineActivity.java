@@ -27,7 +27,7 @@ public class SardineActivity extends Activity {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
-		
+		//Test Commit
 		Log.i("xiao", "Resource ===  before begin" );
 		Sardine sardine = SardineFactory.begin("lzu", "nopasswd");
 		Log.i("xiao", "Resource ===  after begin" );
