@@ -19,7 +19,7 @@ import android.os.Bundle;
 import android.util.Log;
 
 public class SardineActivity extends Activity {
-	private String ROOT = "http://202.201.1.135:30003/webdav/";
+	private String ROOT = "http://202.201.1.135:30080/mnt/li/lzu1/s1/";
 	private String TAG = "Sardine";
 
 	/** Called when the activity is first created. */
@@ -29,7 +29,7 @@ public class SardineActivity extends Activity {
 		setContentView(R.layout.main);
 		
 		Log.i("xiao", "Resource ===  before begin" );
-		Sardine sardine = SardineFactory.begin("leeagle", "nopasswd");
+		Sardine sardine = SardineFactory.begin("lzu", "nopasswd");
 		Log.i("xiao", "Resource ===  after begin" );
 		List<DavResource> resources;
 		try {
