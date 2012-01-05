@@ -3,6 +3,7 @@ package cn.lzu.edu.webdav;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
@@ -17,6 +18,7 @@ import com.googlecode.sardine.SardineFactory;
 import android.app.Activity;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.TextView;
 
 public class SardineActivity extends Activity {
 	private String ROOT = "http://202.201.1.135:30080/mnt/li/lzu1/s1/";
@@ -27,23 +29,27 @@ public class SardineActivity extends Activity {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
-		//Test Commit
-		Log.i("xiao", "Resource ===  before begin" );
 		Sardine sardine = SardineFactory.begin("lzu", "nopasswd");
-		Log.i("xiao", "Resource ===  after begin" );
 		List<DavResource> resources;
 		try {
-			Log.i("xiao", "before list");
-			resources = sardine.list(ROOT);
-			Log.i("xiao", "Resource ===  after list" );
+			resources = sardine.list(ROOT + "nihao/");
 			for (DavResource res : resources) {
-				Log.i("xiao", "Resource ===  " + res);
-				System.out.println("Res: " + res);
+				System.out.println("Res: " + res.getName());
 			}
-			/*InputStream fis = new FileInputStream(new File(
-			"/mnt/sdcard/HelloWorld1.txt"));*/
-			// "/mnt/sdcard/iLauncher/cn.lzu.edu.androidcontrol.png"));
-			//sardine.put(ROOT + "HelloWorld1.txt", fis);
+			sardine.copy(ROOT + "aliii", ROOT + "justtest/aliii");
+			/* 保存文件到sd卡，并命名为test.txt
+			 * InputStream fis = sardine.get(ROOT + "hist.log");
+			FileOutputStream fos=new FileOutputStream( "/mnt/sdcard/test.txt");
+			byte[] buffer = new byte[1444];
+			int byteread=0;
+			while((byteread=fis.read(buffer))!=-1) { 
+			      fos.write(buffer,0,byteread); 
+			  }   
+			fis.close();
+			fos.close();*/
+			InputStream fis = new FileInputStream(new File(
+			"/mnt/sdcard/HttpHost.java"));
+			sardine.put(ROOT + "nihao/HttpHost.java", fis);
 		} catch (IOException e) {
 			Log.i("xiao", "====================================");
 			Log.i("xiao", "Error = " + e.getMessage());
