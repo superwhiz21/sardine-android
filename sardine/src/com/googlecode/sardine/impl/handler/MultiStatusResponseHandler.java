@@ -39,9 +39,9 @@ import java.io.InputStream;
  * @author mirko
  * @version $Id: MultiStatusResponseHandler.java 276 2011-06-28 08:13:28Z dkocher@sudo.ch $
  */
-public class MultiStatusResponseHandler extends ValidatingResponseHandler<MS>
+public class MultiStatusResponseHandler extends ValidatingResponseHandler<Multistatus>
 {
-	public MS handleResponse(HttpResponse response) throws SardineException, IOException
+	public Multistatus handleResponse(HttpResponse response) throws SardineException, IOException
 	{
 		super.validateResponse(response);
 
@@ -63,7 +63,7 @@ public class MultiStatusResponseHandler extends ValidatingResponseHandler<MS>
 	 * @return Multistatus element parsed from the stream
 	 * @throws IOException When there is a JAXB error
 	 */
-	protected MS getMultistatus(InputStream stream)
+	protected Multistatus getMultistatus(InputStream stream)
 			throws IOException
 	{
 		//return null;
@@ -71,7 +71,7 @@ public class MultiStatusResponseHandler extends ValidatingResponseHandler<MS>
 
 		// deserializer
 		try {
-			MS multistatus = serializer.read(MS.class, stream, false);
+			Multistatus multistatus = serializer.read(Multistatus.class, stream, false);
 			//Log.i(TAG, "Read multistatus " + multistatus.toString());
 			//for (Response res : multistatus.getResponse()) {
 				//Log.i(TAG, "Response " + res.toString());

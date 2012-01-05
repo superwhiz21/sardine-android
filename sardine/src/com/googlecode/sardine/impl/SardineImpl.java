@@ -84,9 +84,7 @@ import org.apache.http.protocol.ExecutionContext;
 import org.apache.http.protocol.HTTP;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.util.VersionInfo;
-import org.w3c.dom.Element;
-
-import cn.lzu.edu.webdav.MS;
+import org.simpleframework.xml.Element;
 
 import com.googlecode.sardine.DavResource;
 import com.googlecode.sardine.Sardine;
@@ -388,27 +386,26 @@ public class SardineImpl implements Sardine {
 	 */
 	public List<DavResource> list(String url, int depth) throws IOException {
 		log.warn("list");
-
 		HttpPropFind entity = new HttpPropFind(url);
 		entity.setDepth(Integer.toString(depth));
 		Propfind body = new Propfind();
 		body.setAllprop(new Allprop());
 		// entity.setEntity(new StringEntity(SardineUtil.toXml(body), UTF_8));
 		entity.setEntity(new StringEntity("<?xml version=\"1.0\" encoding=\"utf-8\" ?><D:propfind xmlns:D=\"DAV:\">  <D:allprop/></D:propfind>", UTF_8));
-		MS multistatus = this.execute(entity,
+		Multistatus multistatus = this.execute(entity,
 				new MultiStatusResponseHandler());
-		List<cn.lzu.edu.webdav.Response> responses = multistatus.getResponse();
+		List<Response> responses = multistatus.getResponse();
 		log.warn("getResponse");
 		List<DavResource> resources = new ArrayList<DavResource>(
 				responses.size());
-		for (cn.lzu.edu.webdav.Response response : responses) {
-			log.warn("LLL " + response.toString());
-//			try {
-//				resources.add(new DavResource(response));
-//			} catch (URISyntaxException e) {
-//				log.warn(String.format("Ignore resource with invalid URI %s",
-//						response.getHref().get(0)));
-//			}
+		for (Response response : responses) {
+//			log.warn("LLL " + response.getHref());
+			try {
+				resources.add(new DavResource(response));
+			} catch (URISyntaxException e) {
+				log.warn(String.format("Ignore resource with invalid URI %s",
+						response.getHref()));
+			}
 		}
 		return resources;
 	}
@@ -434,7 +431,7 @@ public class SardineImpl implements Sardine {
 	 */
 	public List<DavResource> patch(String url, Map<QName, String> setProps,
 			List<QName> removeProps) throws IOException {
-		HttpPropPatch entity = new HttpPropPatch(url);
+		/*HttpPropPatch entity = new HttpPropPatch(url);
 		// Build WebDAV <code>PROPPATCH</code> entity.
 		Propertyupdate body = new Propertyupdate();
 		// Add properties
@@ -478,7 +475,8 @@ public class SardineImpl implements Sardine {
 //						response.getHref().get(0)));
 //			}
 //		}
-		return resources;
+		return resources;*/
+		return null;
 	}
 
 	/**

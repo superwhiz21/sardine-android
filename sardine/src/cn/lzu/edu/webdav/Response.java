@@ -1,12 +1,19 @@
 package cn.lzu.edu.webdav;
 
+import java.util.List;
+
 import org.simpleframework.xml.Element;
 
 public class Response {
 	@Element
-	private String href;
+	private List<String> href;
+	@Element Propstat propstat;
 
-	public String toString() {
+	public Propstat getPropstat() {
+		return propstat;
+	}
+
+	public List<String> getHref() {
 		return href;
 	}
 

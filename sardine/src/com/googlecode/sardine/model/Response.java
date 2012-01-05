@@ -16,6 +16,8 @@ package com.googlecode.sardine.model;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.simpleframework.xml.Element;
+
 
 /**
  * <p>Java class for anonymous complex type.
@@ -56,10 +58,15 @@ import java.util.List;
 public class Response {
 
 //    @XmlElement(required = true)
-    protected List<String> href;
+	@Element
+    protected String href;
+	@Element (required = false)
     protected String status;
-    protected List<Propstat> propstat;
+	@Element
+    protected Propstat propstat;
+	@Element (required = false)
     protected Error error;
+	@Element (required = false)
     protected String responsedescription;
 
     /**
@@ -82,9 +89,9 @@ public class Response {
      * Objects of the following type(s) are allowed in the list
      * {@link String }
      */
-    public List<String> getHref() {
+    public String getHref() {
         if(href == null) {
-            href = new ArrayList<String>();
+            href = new String();
         }
         return this.href;
     }
@@ -129,9 +136,9 @@ public class Response {
      * Objects of the following type(s) are allowed in the list
      * {@link Propstat }
      */
-    public List<Propstat> getPropstat() {
+    public Propstat getPropstat() {
         if(propstat == null) {
-            propstat = new ArrayList<Propstat>();
+            propstat = new Propstat();
         }
         return this.propstat;
     }

@@ -52,7 +52,6 @@ import org.simpleframework.xml.Root;
 @Root
 public class Multistatus {
 
-	// @XmlElement(required = true)
 	@ElementList(inline = true)
 	protected List<Response> response;
 	@Element(required = false)
