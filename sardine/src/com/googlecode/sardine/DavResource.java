@@ -401,8 +401,7 @@ public class DavResource
 				path = path.substring(0, path.length() - 1);
 			}
 			return path.substring(path.lastIndexOf('/') + 1);
-		} catch (StringIndexOutOfBoundsException e)
-		{
+		} catch (StringIndexOutOfBoundsException e) {
             log.warn(String.format("Failed to parse name from path %s", path));
 			return null;
 		}
