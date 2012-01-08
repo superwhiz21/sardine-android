@@ -1,5 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="hello">Hello World, SardineActivity!</string>
-    <string name="app_name">Sardine</string>
+    <string name="hello">Hello World, NasStorageHttpDemo!</string>
+    <string name="app_name">NasStorageHttpDemo</string>
+    <string name="nas_file">    NasStorage File</string>
+    <string name="local_file">   Local File</string>
+    <string name="load_dialog_tile">加载</string>
+    <string name="load_dialog_mess">正在加载数据,请稍候！</string>
+    <string name="dele_dialog_tile">删除</string>
+    <string name="dele_dialog_mess">正在删除数据,请稍候！</string>
+    <string name="create_folder">Create Folder</string>
+    <string name="input_folder_name">Please input file name</string>
+    <string name="upload_file">Upload</string>
+    <string name="ok">Ok</string>
+    <string name="cancel">Cancel</string>
+    <string name="rename">Rename</string>
+    <string name="rename_prompt">Enter the new file name</string>
+    <string name="finish">Are you sure to exit?</string>
+    <string name="exit">Exit</string>
+    <string name="edit">Edit</string>
+    <string name="upload">Upload</string>
+    <string name="download">Download</string>
+    <string name="delete">Delete</string>
+    <string name="title">兰州韦尔斯信息科技有限公司 \n手机云存储Demo</string>
 </resources>
