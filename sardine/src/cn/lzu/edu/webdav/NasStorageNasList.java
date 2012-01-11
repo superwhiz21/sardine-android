@@ -5,6 +5,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 
@@ -35,104 +37,131 @@ import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
+import android.widget.Toast;
 import android.widget.AdapterView.OnItemClickListener;
 
 public class NasStorageNasList extends Activity {
-	
+
+	public static final int DELETE_TOAST = 3;
+	public static final int PASTE_TOAST = 7;
 	private String ROOT = "http://202.201.1.135:30080/mnt/li/lzu1/s1/";
 	private List<DavResource> resources = null;
 	private Sardine sardine = null;
 	private int dept = 0;
-	
-	
+	private String SOURCEURL = null; // Just for copy and move
+	private String DESTANATIONFILE = null; // Just for copy and move
+	private boolean isExistRootCache = false;
+	private int pasteMode = 0; // 0: copy; 1: move
+
+	Resources localResources = null;
+
 	private final int CREATE_FOLDER = 1;
+	private final int PASTE_FILE = 2;
 	private int mPresentDown = 0;
 
 	private int mPictures[];
-	
+
 	private String tag = "xiao";
-	
+
 	private ListView mFileDirList;
-	
+
 	private ArrayList<HashMap<String, Object>> recordItem;
-	
+
 	BroadcastReceiver mExternalStorageReceiver;
 	private ProgressDialog progressDialog;
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        
-        setContentView(R.layout.server_files);
-        initVariable();
-        final Resources localResources = this.getResources();
-        progressDialog = ProgressDialog.show(this, localResources.getString(R.string.load_dialog_tile), localResources.getString(R.string.load_dialog_mess));
-        new mThread().run();
-        this.setTitle("NasStorage Server");
-    }
-    
-    class mThread extends Thread
-    {        
-        @Override
-        public void run() {
-            // TODO Auto-generated method stub
-            super.run();
-            try {
-            	 connecting();
-            	 Message msg_listData = new Message();
-            	 handler.sendMessageDelayed(msg_listData, 500);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-        
-    }    
-   
-    
-    private Handler handler = new Handler() {               
-        public void handleMessage(Message message) {                                                       
-             progressDialog.dismiss(); // 关闭进度条
-             listFile();
-        }
+
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+
+		setContentView(R.layout.server_files);
+		initVariable();
+		localResources = this.getResources();
+		progressDialog = ProgressDialog.show(this,
+				localResources.getString(R.string.load_dialog_tile),
+				localResources.getString(R.string.dialog_mess));
+		new mThread().run();
+		this.setTitle("NasStorage Server");
+	}
+
+	class mThread extends Thread {
+		@Override
+		public void run() {
+			// TODO Auto-generated method stub
+			super.run();
+			try {
+				connecting();
+				Message msg_listData = new Message();
+				handler.sendMessageDelayed(msg_listData, 500);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+
+	}
+
+	private Handler handler = new Handler() {
+		public void handleMessage(Message message) {
+			progressDialog.dismiss(); // 关闭进度条
+			listFile();
+			switch (message.what) {
+			case 3:
+				Toast.makeText(NasStorageNasList.this,
+						localResources.getString(R.string.delete_toast),
+						Toast.LENGTH_SHORT).show();
+				break;
+			case 7:
+				Toast.makeText(NasStorageNasList.this,
+						localResources.getString(R.string.paste_toast),
+						Toast.LENGTH_SHORT).show();
+				break;
+			}
+		}
 	};
-    
-    public void initVariable(){
-    	mFileDirList = (ListView)findViewById(R.id.mServerList);
-    	mPictures = new int[]{R.drawable.back, R.drawable.dir, R.drawable.doc};
-    }
-    
-    public void connecting(){
-    	sardine = SardineFactory.begin("lzu", "nopasswd");
-    } 
-    
-    public void listFile(){
-    	try {
+
+	public void initVariable() {
+		mFileDirList = (ListView) findViewById(R.id.mServerList);
+		mPictures = new int[] { R.drawable.back, R.drawable.dir, R.drawable.doc };
+	}
+
+	public void connecting() {
+		sardine = SardineFactory.begin("lzu", "nopasswd");
+	}
+
+	public void listFile() {
+		try {
 			resources = sardine.list(ROOT);
+			/*
+			 * sort
+			 */
+			// Collections.sort(resources, new ComparatorValues());
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-    	fillFile();
-    }
-    
-    public void fillFile(){
-    	SimpleAdapter adapter = null;
-    	recordItem = null;
+		fillFile();
+	}
+
+	public void fillFile() {
+		SimpleAdapter adapter = null;
+		recordItem = null;
 		recordItem = new ArrayList<HashMap<String, Object>>();
 		int count = 0;
 		for (DavResource res : resources) {
 			HashMap<String, Object> map = new HashMap<String, Object>();
-			if(count == 0) {
+			if (count == 0) {
 				count++;
 				map.put("picture", mPictures[0]);
 				map.put("type", "directory");
 				map.put("name", res.getName());
 				recordItem.add(map);
-			} else if(res.getContentType() == null) {
+			} else if (res.getContentType() == null) {
 				map.put("picture", mPictures[2]);
 				map.put("type", "file");
 				map.put("name", res.getName());
 				recordItem.add(map);
-			} else if(res.getContentType().equalsIgnoreCase("httpd/unix-directory")) {
+			} else if (res.getContentType().equalsIgnoreCase(
+					"httpd/unix-directory")) {
 				map.put("picture", mPictures[1]);
 				map.put("type", "directory");
 				map.put("name", res.getName());
@@ -144,120 +173,149 @@ public class NasStorageNasList extends Activity {
 				recordItem.add(map);
 			}
 		}
-	    Log.i("xiao", "recordItem.size = " + recordItem.size());
-		adapter = new SimpleAdapter(this, recordItem, R.layout.server_item, new String[]{"picture", "name"}, new int[]{R.id.server_picture, R.id.server_text});
+		adapter = new SimpleAdapter(this, recordItem, R.layout.server_item,
+				new String[] { "picture", "name" }, new int[] {
+						R.id.server_picture, R.id.server_text });
 		mFileDirList.setAdapter(adapter);
 		mFileDirList.setOnItemLongClickListener(new LongClickListener());
 		mFileDirList.setOnItemClickListener(new ClickListener());
-    }
-    
-    public boolean onCreateOptionsMenu(Menu menu) {
-    	super.onCreateOptionsMenu(menu);
-    	
-    	menu.add(0, CREATE_FOLDER, 0, R.string.create_folder);
-    	return true;
-    }
-    
-    public boolean onOptionsItemSelected(MenuItem item) {
-    	switch(item.getItemId()){
-    	case CREATE_FOLDER:
-    		createDialog().show();
-    		break;
-    	}
-    	
-    	return true;
-    }
-    
-    protected void onDestroy(){
-    	Log.i(tag, "onDestroy");
-    	super.onDestroy();
-    }
-    
-    public Dialog createDialog(){
-    	final Resources localResources = this.getResources();
-	    AlertDialog.Builder builder = new Builder(this);
-		final View layout = View.inflate(this, R.layout.create_new_folder, null);
-		final EditText localFileName = (EditText)layout.findViewById(R.id.folder_name);
-		
+	}
+
+	public boolean onCreateOptionsMenu(Menu menu) {
+		super.onCreateOptionsMenu(menu);
+		menu.add(0, CREATE_FOLDER, 0, R.string.create_folder).setIcon(
+				android.R.drawable.ic_menu_add);
+		menu.add(0, PASTE_FILE, 0, R.string.paste).setIcon(
+				android.R.drawable.ic_menu_set_as);
+		return true;
+	}
+
+	public boolean onOptionsItemSelected(MenuItem item) {
+		switch (item.getItemId()) {
+		case CREATE_FOLDER:
+			createDialog().show();
+			break;
+		case PASTE_FILE:
+			PasteFile();
+			break;
+		}
+
+		return true;
+	}
+
+	protected void onDestroy() {
+		Log.i(tag, "onDestroy");
+		super.onDestroy();
+	}
+
+	public Dialog createDialog() {
+		AlertDialog.Builder builder = new Builder(this);
+		final View layout = View
+				.inflate(this, R.layout.create_new_folder, null);
+		final EditText localFileName = (EditText) layout
+				.findViewById(R.id.folder_name);
+
 		builder.setTitle(this.getResources().getString(R.string.create_folder));
 		builder.setView(layout);
-		builder.setPositiveButton(localResources.getString(R.string.ok), new OnClickListener(){
-	
-		
-			public void onClick(DialogInterface dialog, int which) {
-				try {
-					sardine.createDirectory(ROOT + localFileName.getText().toString().trim());
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-	    		listFile();
-				dialog.dismiss();
-			}
-		});
-		
-		builder.setNegativeButton(localResources.getString(R.string.cancel), new OnClickListener(){
-	
-			
-			public void onClick(DialogInterface dialog, int which) {
-				dialog.dismiss();
-			}
-		});
+		builder.setPositiveButton(localResources.getString(R.string.ok),
+				new OnClickListener() {
+
+					public void onClick(DialogInterface dialog, int which) {
+						try {
+							sardine.createDirectory(ROOT
+									+ localFileName.getText().toString().trim());
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+						listFile();
+						dialog.dismiss();
+					}
+				});
+
+		builder.setNegativeButton(localResources.getString(R.string.cancel),
+				new OnClickListener() {
+
+					public void onClick(DialogInterface dialog, int which) {
+						dialog.dismiss();
+					}
+				});
 		return builder.create();
-    }
-    
-    public Dialog createFunctionDialog(){
-    	final Resources localResources = this.getResources();
-	    AlertDialog.Builder builder = new Builder(this);
-	    String []localArray = {localResources.getString(R.string.download), localResources.getString(R.string.delete), localResources.getString(R.string.rename)};
-	    builder.setItems(localArray, new OnClickListener(){
+	}
+
+	public Dialog createFunctionDialog() {
+		AlertDialog.Builder builder = new Builder(this);
+		String[] localArray = { localResources.getString(R.string.download),
+				localResources.getString(R.string.delete),
+				localResources.getString(R.string.rename),
+				localResources.getString(R.string.copy),
+				localResources.getString(R.string.move) };
+		builder.setItems(localArray, new OnClickListener() {
 
 			public void onClick(DialogInterface dialog, int which) {
-				switch(which){
+				switch (which) {
 				case 0:
-					progressDialog = ProgressDialog.show(NasStorageNasList.this, localResources.getString(R.string.load_dialog_tile), localResources.getString(R.string.load_dialog_mess));
+					progressDialog = ProgressDialog.show(
+							NasStorageNasList.this,
+							localResources.getString(R.string.load_dialog_tile),
+							localResources.getString(R.string.dialog_mess));
 					new DownLoadThread().run();
 					break;
 				case 1:
-					progressDialog = ProgressDialog.show(NasStorageNasList.this, localResources.getString(R.string.dele_dialog_tile), localResources.getString(R.string.dele_dialog_tile));
+					progressDialog = ProgressDialog.show(
+							NasStorageNasList.this,
+							localResources.getString(R.string.dele_dialog_tile),
+							localResources.getString(R.string.dialog_mess));
 					new DeleteFileThread().run();
 					break;
 				case 2:
-					RenameFile((String)recordItem.get(mPresentDown).get("name")).show();
+					RenameFile(
+							(String) recordItem.get(mPresentDown).get("name"))
+							.show();
+					break;
+				case 3:
+					CopyFile((String) recordItem.get(mPresentDown).get("name"));
+					break;
+				case 4:
+					MoveFile((String) recordItem.get(mPresentDown).get("name"));
 					break;
 				}
 			}
-	    	
-	    });
+
+		});
 		return builder.create();
-    }
-    
-    class ClickListener implements OnItemClickListener {
+	}
+
+	class ClickListener implements OnItemClickListener {
 
 		@Override
 		public void onItemClick(AdapterView<?> arg0, View arg1, int arg2,
 				long arg3) {
 			mPresentDown = arg2;
 			changeDirectory();
-			
+
 		}
-    	
-    }
-    
-    public void changeDirectory() {
-    	final Resources localResources = this.getResources();
-		progressDialog = ProgressDialog.show(NasStorageNasList.this, localResources.getString(R.string.load_dialog_tile), localResources.getString(R.string.load_dialog_mess));
-    	String selectedFile = (String) recordItem.get(mPresentDown).get("name");
-		if(mPresentDown == 0 && dept > 0) {
+
+	}
+
+	public void changeDirectory() {
+		progressDialog = ProgressDialog.show(NasStorageNasList.this,
+				localResources.getString(R.string.load_dialog_tile),
+				localResources.getString(R.string.dialog_mess));
+		String selectedFile = (String) recordItem.get(mPresentDown).get("name");
+		if (mPresentDown == 0 && dept > 0) {
 			dept--;
 			ROOT = ROOT.replaceAll(selectedFile + "/", "");
-		}else if(recordItem.get(mPresentDown).get("type").toString().equalsIgnoreCase("directory") && mPresentDown > 0) {
+		} else if (recordItem.get(mPresentDown).get("type").toString()
+				.equalsIgnoreCase("directory")
+				&& mPresentDown > 0) {
 			dept++;
 			ROOT = ROOT + selectedFile + "/";
 		}
-		listFile();
-    }
-    
-    class LongClickListener implements OnItemLongClickListener{
+		Message msg_listData = new Message();
+		handler.sendMessageDelayed(msg_listData, 500);
+	}
+
+	class LongClickListener implements OnItemLongClickListener {
 
 		public boolean onItemLongClick(AdapterView<?> arg0, View arg1,
 				int arg2, long arg3) {
@@ -265,37 +323,38 @@ public class NasStorageNasList extends Activity {
 			createFunctionDialog().show();
 			return false;
 		}
-    	
-    }
-    
-    class DownLoadThread implements Runnable{
+
+	}
+
+	class DownLoadThread implements Runnable {
 
 		public void run() {
-			downFile((String)recordItem.get(mPresentDown).get("name"));
+			downFile((String) recordItem.get(mPresentDown).get("name"));
 			Message msg_listData = new Message();
-        	handler.sendMessageDelayed(msg_listData, 500);
+			handler.sendMessageDelayed(msg_listData, 500);
 		}
-    	
-    }
-    
-    class DeleteFileThread implements Runnable{
+
+	}
+
+	class DeleteFileThread implements Runnable {
 
 		public void run() {
-			deleteFileFromDir((String)recordItem.get(mPresentDown).get("name"));
+			deleteFileFromDir((String) recordItem.get(mPresentDown).get("name"));
 			Message msg_listData = new Message();
-        	handler.sendMessageDelayed(msg_listData, 500);
+			msg_listData.what = DELETE_TOAST;
+			handler.sendMessageDelayed(msg_listData, 500);
 		}
-    	
-    }
-    
-    public void deleteFileFromDir(String fileName){
-    	try {
+
+	}
+
+	public void deleteFileFromDir(String fileName) {
+		try {
 			sardine.delete(ROOT + fileName.replace(" ", "%20"));
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		}
-    } 
-    
+	}
+
 	public void downFile(String fileName) {
 		try {
 			File destDir = new File("/mnt/sdcard/weslab/");
@@ -303,65 +362,136 @@ public class NasStorageNasList extends Activity {
 				destDir.mkdirs();
 			}
 			File outputFile = new File(destDir, fileName);
-			
+
 			InputStream fis = sardine.get(ROOT + fileName.replace(" ", "%20"));
-			FileOutputStream fos=new FileOutputStream(outputFile);
+			FileOutputStream fos = new FileOutputStream(outputFile);
 			byte[] buffer = new byte[1444];
-			int byteread=0;
-			while((byteread=fis.read(buffer))!=-1) { 
-			      fos.write(buffer,0,byteread); 
-			  }   
+			int byteread = 0;
+			while ((byteread = fis.read(buffer)) != -1) {
+				fos.write(buffer, 0, byteread);
+			}
 			fis.close();
 			fos.close();
-		} catch(IOException e) {
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
-	
+
 	/*
 	 * 重命名文件
 	 */
 	public Dialog RenameFile(final String fileName) {
-		System.out.println("important: rename file");
-		final Resources localResources = this.getResources();
-	    AlertDialog.Builder builder = new Builder(this);
-		final View layout = View.inflate(this, R.layout.create_new_folder, null);
-		final EditText localFileName = (EditText)layout.findViewById(R.id.folder_name);
+		AlertDialog.Builder builder = new Builder(this);
+		final View layout = View
+				.inflate(this, R.layout.create_new_folder, null);
+		final EditText localFileName = (EditText) layout
+				.findViewById(R.id.folder_name);
 		localFileName.setText(fileName);
-		
+
 		builder.setTitle(this.getResources().getString(R.string.rename_prompt));
 		builder.setView(layout);
-		builder.setPositiveButton(localResources.getString(R.string.ok), new OnClickListener(){
-	
-		
-			public void onClick(DialogInterface dialog, int which) {
-				try {
-					sardine.move(ROOT + fileName, ROOT + localFileName.getText().toString().trim());
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-	    		listFile();
-				dialog.dismiss();
-			}
-		});
-		
-		builder.setNegativeButton(localResources.getString(R.string.cancel), new OnClickListener(){
-	
-			
-			public void onClick(DialogInterface dialog, int which) {
-				dialog.dismiss();
-			}
-		});
+		builder.setPositiveButton(localResources.getString(R.string.ok),
+				new OnClickListener() {
+
+					public void onClick(DialogInterface dialog, int which) {
+						try {
+							sardine.move(ROOT + fileName, ROOT
+									+ localFileName.getText().toString().trim());
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+						listFile();
+						dialog.dismiss();
+					}
+				});
+
+		builder.setNegativeButton(localResources.getString(R.string.cancel),
+				new OnClickListener() {
+
+					public void onClick(DialogInterface dialog, int which) {
+						dialog.dismiss();
+					}
+				});
 		return builder.create();
 	}
-	
-	public boolean onKeyDown(int keyCode, KeyEvent event){
-    	if(keyCode == KeyEvent.KEYCODE_BACK){
-    		Intent localIntent = new Intent();
-    		localIntent.setClass(NasStorageNasList.this, SardineActivity.class);
-    		NasStorageNasList.this.startActivity(localIntent);
-    		NasStorageNasList.this.finish();
-    	}
-    	return false;
-    }
+
+	public void CopyFile(String fileName) {
+		SOURCEURL = ROOT + fileName.replace(" ", "%20");
+		DESTANATIONFILE = fileName;
+		isExistRootCache = true;
+		pasteMode = 0;
+		Toast.makeText(this,
+				localResources.getString(R.string.copy_toast) + fileName,
+				Toast.LENGTH_SHORT).show();
+	}
+
+	public void MoveFile(String fileName) {
+		SOURCEURL = ROOT + fileName.replace(" ", "%20");
+		DESTANATIONFILE = fileName;
+		isExistRootCache = true;
+		pasteMode = 1;
+		Toast.makeText(this,
+				localResources.getString(R.string.move_toast) + fileName,
+				Toast.LENGTH_SHORT).show();
+	}
+
+	public void PasteFile() {
+		if (!isExistRootCache) {
+			Toast.makeText(this,
+					localResources.getString(R.string.cannotpaste_toast),
+					Toast.LENGTH_SHORT).show();
+			return;
+		}
+		progressDialog = ProgressDialog.show(NasStorageNasList.this,
+				localResources.getString(R.string.load_dialog_tile),
+				localResources.getString(R.string.dialog_mess));
+		isExistRootCache = false;
+		switch (pasteMode) {
+		case 0:
+			try {
+				sardine.copy(SOURCEURL, ROOT + DESTANATIONFILE);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			break;
+		case 1:
+			try {
+				sardine.move(SOURCEURL, ROOT + DESTANATIONFILE);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			break;
+		}
+		Message msg_listData = new Message();
+		msg_listData.what = PASTE_TOAST;
+		handler.sendMessageDelayed(msg_listData, 500);
+
+	}
+
+	public boolean onKeyDown(int keyCode, KeyEvent event) {
+		if (keyCode == KeyEvent.KEYCODE_BACK) {
+			Intent localIntent = new Intent();
+			localIntent.setClass(NasStorageNasList.this, SardineActivity.class);
+			NasStorageNasList.this.startActivity(localIntent);
+			NasStorageNasList.this.finish();
+		}
+		return false;
+	}
+
+	public static final class ComparatorValues implements
+			Comparator<DavResource> {
+
+		@Override
+		public int compare(DavResource object1, DavResource object2) {
+			/*
+			 * int m1=object1.getContentType(); int
+			 * m2=object2.getAsInteger("test"); int result=0; if(m1>m2) {
+			 * result=1; } if(m1<m2) { result=-1; } return result;
+			 */
+			return 1;
+		}
+
+	}
 }

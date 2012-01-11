@@ -399,7 +399,7 @@ public class SardineImpl implements Sardine {
 		List<DavResource> resources = new ArrayList<DavResource>(
 				responses.size());
 		for (Response response : responses) {
-//			log.warn("LLL " + response.getHref());
+			log.warn("LLL " + response.getHref());
 			try {
 				resources.add(new DavResource(response));
 			} catch (URISyntaxException e) {
