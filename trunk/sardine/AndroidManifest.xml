@@ -16,6 +16,7 @@
             </intent-filter>
         </activity>
         <activity android:name=".NasStorageNasList"></activity>
-
+		<activity android:name=".AboutActivity"></activity>
+		<activity android:name=".NasStorageLocalList"></activity>
     </application>
 </manifest>
