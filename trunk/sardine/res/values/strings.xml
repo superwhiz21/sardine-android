@@ -18,6 +18,7 @@
     <string name="about">About</string>
     <string name="prompt">Prompt</string>
     <string name="finish">Are you sure to exit?</string>
+    <string name="error">Network error</string>
     <string name="exit">Exit</string>
     <string name="edit">Edit</string>
     <string name="download">Download</string>
