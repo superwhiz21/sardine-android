@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -45,6 +46,8 @@ public class NasStorageNasList extends Activity {
 	public static final int DELETE_TOAST = 3;
 	public static final int PASTE_TOAST = 7;
 	private String ROOT = "http://202.201.1.135:30080/mnt/li/lzu1/s1/";
+	private String REMOTEDOWNROOT = ROOT;
+	private String LOCALDOWNROOT = "/mnt/sdcard/weslab/";
 	private List<DavResource> resources = null;
 	private Sardine sardine = null;
 	private int dept = 0;
@@ -102,7 +105,7 @@ public class NasStorageNasList extends Activity {
 
 	private Handler handler = new Handler() {
 		public void handleMessage(Message message) {
-			progressDialog.dismiss(); // πÿ±’Ω¯∂»Ãı
+			progressDialog.dismiss();
 			listFile();
 			switch (message.what) {
 			case 3:
@@ -131,15 +134,34 @@ public class NasStorageNasList extends Activity {
 	public void listFile() {
 		try {
 			resources = sardine.list(ROOT);
-			/*
-			 * sort
-			 */
-			// Collections.sort(resources, new ComparatorValues());
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		if (resources.isEmpty()) {
+			error();
+		}
 		fillFile();
+	}
+
+	private void error() {
+		final Resources localResources = this.getResources();
+		AlertDialog.Builder builder = new Builder(NasStorageNasList.this);
+		builder.setMessage(localResources.getString(R.string.error));
+		builder.setTitle(localResources.getString(R.string.prompt));
+		builder.setPositiveButton(localResources.getString(R.string.ok),
+				new android.content.DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						dialog.dismiss();
+						Intent localIntent = new Intent();
+						localIntent.setClass(NasStorageNasList.this,
+								SardineActivity.class);
+						NasStorageNasList.this.startActivity(localIntent);
+						NasStorageNasList.this.finish();
+					}
+				});
+		builder.create().show();
 	}
 
 	public void fillFile() {
@@ -152,7 +174,7 @@ public class NasStorageNasList extends Activity {
 			if (count == 0) {
 				count++;
 				map.put("picture", mPictures[0]);
-				map.put("type", "directory");
+				map.put("type", "currdirectory");
 				map.put("name", res.getName());
 				recordItem.add(map);
 			} else if (res.getContentType() == null) {
@@ -163,7 +185,7 @@ public class NasStorageNasList extends Activity {
 			} else if (res.getContentType().equalsIgnoreCase(
 					"httpd/unix-directory")) {
 				map.put("picture", mPictures[1]);
-				map.put("type", "directory");
+				map.put("type", "httpd/unix-directory");
 				map.put("name", res.getName());
 				recordItem.add(map);
 			} else {
@@ -173,6 +195,7 @@ public class NasStorageNasList extends Activity {
 				recordItem.add(map);
 			}
 		}
+		Collections.sort(recordItem, new ComparatorValues());
 		adapter = new SimpleAdapter(this, recordItem, R.layout.server_item,
 				new String[] { "picture", "name" }, new int[] {
 						R.id.server_picture, R.id.server_text });
@@ -273,10 +296,12 @@ public class NasStorageNasList extends Activity {
 							.show();
 					break;
 				case 3:
-					CopyFile((String) recordItem.get(mPresentDown).get("name"));
+					CopyFile((String) recordItem.get(mPresentDown).get("name"),
+							(String) recordItem.get(mPresentDown).get("type"));
 					break;
 				case 4:
-					MoveFile((String) recordItem.get(mPresentDown).get("name"));
+					MoveFile((String) recordItem.get(mPresentDown).get("name"),
+							(String) recordItem.get(mPresentDown).get("type"));
 					break;
 				}
 			}
@@ -306,7 +331,7 @@ public class NasStorageNasList extends Activity {
 			dept--;
 			ROOT = ROOT.replaceAll(selectedFile + "/", "");
 		} else if (recordItem.get(mPresentDown).get("type").toString()
-				.equalsIgnoreCase("directory")
+				.equalsIgnoreCase("httpd/unix-directory")
 				&& mPresentDown > 0) {
 			dept++;
 			ROOT = ROOT + selectedFile + "/";
@@ -319,8 +344,10 @@ public class NasStorageNasList extends Activity {
 
 		public boolean onItemLongClick(AdapterView<?> arg0, View arg1,
 				int arg2, long arg3) {
-			mPresentDown = arg2;
-			createFunctionDialog().show();
+			if (arg2 > 0) {
+				mPresentDown = arg2;
+				createFunctionDialog().show();
+			}
 			return false;
 		}
 
@@ -329,7 +356,8 @@ public class NasStorageNasList extends Activity {
 	class DownLoadThread implements Runnable {
 
 		public void run() {
-			downFile((String) recordItem.get(mPresentDown).get("name"));
+			download((String) recordItem.get(mPresentDown).get("name"),
+					(String) recordItem.get(mPresentDown).get("type"));
 			Message msg_listData = new Message();
 			handler.sendMessageDelayed(msg_listData, 500);
 		}
@@ -339,7 +367,9 @@ public class NasStorageNasList extends Activity {
 	class DeleteFileThread implements Runnable {
 
 		public void run() {
-			deleteFileFromDir((String) recordItem.get(mPresentDown).get("name"));
+			deleteFileFromDir(
+					(String) recordItem.get(mPresentDown).get("name"),
+					(String) recordItem.get(mPresentDown).get("type"));
 			Message msg_listData = new Message();
 			msg_listData.what = DELETE_TOAST;
 			handler.sendMessageDelayed(msg_listData, 500);
@@ -347,23 +377,57 @@ public class NasStorageNasList extends Activity {
 
 	}
 
-	public void deleteFileFromDir(String fileName) {
+	public void deleteFileFromDir(String fileName, String type) {
+		String destDel = ROOT + fileName;
+		if (type.equals("httpd/unix-directory")) {
+			destDel = destDel + "/";
+		}
 		try {
-			sardine.delete(ROOT + fileName.replace(" ", "%20"));
-		} catch (IOException e1) {
-			e1.printStackTrace();
+			sardine.delete(destDel);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	public void download(String fileName, String type) {
+		int tmpCount = 0;
+		if (type.equals("httpd/unix-directory")) {
+			REMOTEDOWNROOT = ROOT + fileName + "/";
+			LOCALDOWNROOT = LOCALDOWNROOT + fileName + "/";
+			List<DavResource> downList = null;
+			try {
+				downList = sardine.list(REMOTEDOWNROOT);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			for (DavResource res : downList) {
+				if (tmpCount == 0) {
+					tmpCount++;
+					continue;
+				}
+				if (res.getContentType().equalsIgnoreCase(
+						"httpd/unix-directory")) {
+					download(res.getName(), res.getContentType());
+				} else {
+					downFile(res.getName());
+				}
+			}
+		} else {
+			downFile(fileName);
 		}
 	}
 
 	public void downFile(String fileName) {
 		try {
-			File destDir = new File("/mnt/sdcard/weslab/");
+			File destDir = new File(LOCALDOWNROOT);
 			if (!destDir.exists()) {
 				destDir.mkdirs();
 			}
 			File outputFile = new File(destDir, fileName);
 
-			InputStream fis = sardine.get(ROOT + fileName.replace(" ", "%20"));
+			InputStream fis = sardine.get(REMOTEDOWNROOT
+					+ fileName.replace(" ", "%20"));
 			FileOutputStream fos = new FileOutputStream(outputFile);
 			byte[] buffer = new byte[1444];
 			int byteread = 0;
@@ -378,7 +442,7 @@ public class NasStorageNasList extends Activity {
 	}
 
 	/*
-	 * ÷ÿ√¸√˚Œƒº˛
+	 * ÈáçÂëΩÂêçÊñá‰ª∂
 	 */
 	public Dialog RenameFile(final String fileName) {
 		AlertDialog.Builder builder = new Builder(this);
@@ -395,12 +459,15 @@ public class NasStorageNasList extends Activity {
 
 					public void onClick(DialogInterface dialog, int which) {
 						try {
-							sardine.move(ROOT + fileName, ROOT
-									+ localFileName.getText().toString().trim());
+							sardine.move(ROOT + fileName,
+									ROOT + localFileName.getText());
 						} catch (IOException e) {
 							e.printStackTrace();
 						}
 						listFile();
+						Toast.makeText(NasStorageNasList.this,
+								ROOT + localFileName.getText(),
+								Toast.LENGTH_LONG).show();
 						dialog.dismiss();
 					}
 				});
@@ -415,9 +482,14 @@ public class NasStorageNasList extends Activity {
 		return builder.create();
 	}
 
-	public void CopyFile(String fileName) {
-		SOURCEURL = ROOT + fileName.replace(" ", "%20");
-		DESTANATIONFILE = fileName;
+	public void CopyFile(String fileName, String type) {
+		if (type.equalsIgnoreCase("httpd/unix-directory")) {
+			SOURCEURL = ROOT + fileName.replace(" ", "%20") + "/";
+			DESTANATIONFILE = fileName.replace(" ", "%20") + "/";
+		} else {
+			SOURCEURL = ROOT + fileName.replace(" ", "%20");
+			DESTANATIONFILE = fileName.replace(" ", "%20");
+		}
 		isExistRootCache = true;
 		pasteMode = 0;
 		Toast.makeText(this,
@@ -425,9 +497,14 @@ public class NasStorageNasList extends Activity {
 				Toast.LENGTH_SHORT).show();
 	}
 
-	public void MoveFile(String fileName) {
-		SOURCEURL = ROOT + fileName.replace(" ", "%20");
-		DESTANATIONFILE = fileName;
+	public void MoveFile(String fileName, String type) {
+		if (type.equalsIgnoreCase("httpd/unix-directory")) {
+			SOURCEURL = ROOT + fileName.replace(" ", "%20") + "/";
+			DESTANATIONFILE = fileName.replace(" ", "%20") + "/";
+		} else {
+			SOURCEURL = ROOT + fileName.replace(" ", "%20");
+			DESTANATIONFILE = fileName.replace(" ", "%20");
+		}
 		isExistRootCache = true;
 		pasteMode = 1;
 		Toast.makeText(this,
@@ -481,17 +558,47 @@ public class NasStorageNasList extends Activity {
 	}
 
 	public static final class ComparatorValues implements
-			Comparator<DavResource> {
+			Comparator<HashMap<String, Object>> {
 
 		@Override
-		public int compare(DavResource object1, DavResource object2) {
-			/*
-			 * int m1=object1.getContentType(); int
-			 * m2=object2.getAsInteger("test"); int result=0; if(m1>m2) {
-			 * result=1; } if(m1<m2) { result=-1; } return result;
-			 */
-			return 1;
-		}
+		public int compare(HashMap<String, Object> object1,
+				HashMap<String, Object> object2) {
 
+			int result = 0;
+			String type1 = (String) object1.get("type");
+			String type2 = (String) object2.get("type");
+			String name1 = (String) object1.get("name");
+			String name2 = (String) object2.get("name");
+			if (type1.equals("currdirectory") || type2.equals("currdirectory")) {
+				if (type1.equals("currdirectory")) {
+					result = -1;
+				} else {
+					result = 1;
+				}
+			} else if (type1.equals("httpd/unix-directory")
+					&& type2.equals("httpd/unix-directory")) {
+				if (name1.compareTo(name2) > 0) {
+					result = 1;
+				} else {
+					result = -1;
+				}
+			} else if (type1.equals("httpd/unix-directory")
+					|| type2.equals("httpd/unix-directory")) {
+				if (type1.equals("httpd/unix-directory")) {
+					result = -1;
+				} else {
+					result = 1;
+				}
+			} else {
+				if (name1.compareTo(name2) > 0) {
+					result = 1;
+				} else {
+					result = -1;
+				}
+			}
+
+			return result;
+
+		}
 	}
 }
