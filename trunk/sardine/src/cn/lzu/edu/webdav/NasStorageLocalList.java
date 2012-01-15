@@ -9,6 +9,8 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,7 +47,9 @@ import android.widget.AdapterView.OnItemLongClickListener;
 public class NasStorageLocalList extends Activity {
     public static final int UPLOAD_TOAST = 1;
 	
-	private String ROOT = "http://202.201.1.135:30080/mnt/li/lzu1/s1/";
+	private String ROOT = "http://192.168.2.250/load/";
+	private String USERNAME="leeagle87@126.com";
+	private String PASSWORD="nopasswd";
 	private Sardine sardine = null;
 	
 	Resources localResources = null;
@@ -83,12 +87,12 @@ public class NasStorageLocalList extends Activity {
     	mFileDirList = (ListView)findViewById(R.id.mServerList);
     	mPictures = new int[]{R.drawable.back, R.drawable.dir, R.drawable.doc};
     	mUpdateUiHandler = new UpdateUiHandler();
-    	sardine = SardineFactory.begin("lzu", "nopasswd");
+    	sardine = SardineFactory.begin(USERNAME, PASSWORD);
     }
     
     private Handler handler = new Handler() {               
         public void handleMessage(Message message) {
-            progressDialog.dismiss(); // 关闭进度条
+            progressDialog.dismiss();
             listFile();
             if(message.what == 1) {
             	Toast.makeText(NasStorageLocalList.this, localResources.getString(R.string.upload_toast), Toast.LENGTH_SHORT).show();
@@ -115,6 +119,34 @@ public class NasStorageLocalList extends Activity {
     public void listFile(){
     	File localPath = new File(android.os.Environment.getExternalStorageDirectory().getAbsolutePath());
     	localFiles = localPath.listFiles();
+    	Arrays.sort(localFiles, new Comparator<File>() {
+
+			@Override
+			public int compare(File f1, File f2) {
+				int result = 0;
+				if(Invalid(f1) == 0 && Invalid(f2) == 0) {
+					if(f1.getName().compareTo(f2.getName()) > 0) {
+						result = 1;
+					} else {
+						result = -1;
+					}
+				} else if(Invalid(f1) == 0 || Invalid(f2) == 0) {
+					if(Invalid(f1) == 0) {
+						result = -1;
+					} else {
+						result = 1;
+					}
+				} else {
+					if(f1.getName().compareTo(f2.getName()) > 0) {
+						result = 1;
+					} else {
+						result = -1;
+					}
+				}
+				return result;
+			}
+    		
+    	});
     	setTitle(localPath.getAbsolutePath());
     	fillFile(localFiles);
     }
@@ -292,118 +324,10 @@ public class NasStorageLocalList extends Activity {
     
 	public class UpdateUiHandler extends Handler{
 		public void handleMessage(final Message msg) {  
-			NasStorageLocalList.this.setTitle("已上传" + msg.what + "%");
+			NasStorageLocalList.this.setTitle("锟斤拷锟较达拷" + msg.what + "%");
 		}
 	}
 
-	/**
-	 * 通过拼接的方式构造请求内容，实现参数传输以及文件传输
-	 * 
-	 * @param actionUrl
-	 * @param params
-	 * @param files
-	 * @return
-	 * @throws IOException
-	 */
-	public static String post(String actionUrl, Map<String, String> params,
-			Map<String, File> files, long length) throws IOException {
-
-		String BOUNDARY = java.util.UUID.randomUUID().toString();
-		String PREFIX = "--", LINEND = "\r\n";
-		String MULTIPART_FROM_DATA = "multipart/form-data";
-		String CHARSET = "UTF-8";
-
-		URL uri = new URL(actionUrl);
-		HttpURLConnection conn = (HttpURLConnection) uri.openConnection();
-
-		Log.i("xiao", "HttpURLConnection");
-
-		conn.setReadTimeout(5 * 1000); // 缓存的最长时间
-		conn.setDoInput(true);// 允许输入
-		conn.setDoOutput(true);// 允许输出
-		conn.setUseCaches(false); // 不允许使用缓存
-		conn.setRequestMethod("POST");
-		conn.setRequestProperty("connection", "keep-alive");
-		conn.setRequestProperty("Charsert", "UTF-8");
-		conn.setRequestProperty("Content-Type", MULTIPART_FROM_DATA
-				+ ";boundary=" + BOUNDARY);
-
-		// 首先组拼文本类型的参数
-		StringBuilder sb = new StringBuilder();
-		for (Map.Entry<String, String> entry : params.entrySet()) {
-			sb.append(PREFIX);
-			sb.append(BOUNDARY);
-			sb.append(LINEND);
-			sb.append("Content-Disposition: form-data; name=\""
-					+ entry.getKey() + "\"" + LINEND);
-			sb.append("Content-Type: text/plain; charset=" + CHARSET + LINEND);
-			sb.append("Content-Transfer-Encoding: 8bit" + LINEND);
-			sb.append(LINEND);
-			sb.append(entry.getValue());
-			sb.append(LINEND);
-		}
-
-		Log.i("xiao", "before DataOutputStream ");
-
-		DataOutputStream outStream = new DataOutputStream(
-				conn.getOutputStream());
-		outStream.write(sb.toString().getBytes());
-		// 发送文件数据
-		if (files != null) {
-			int i = 0;
-			for (Map.Entry<String, File> file : files.entrySet()) {
-				StringBuilder sb1 = new StringBuilder();
-				sb1.append(PREFIX);
-				sb1.append(BOUNDARY);
-				sb1.append(LINEND);
-				sb1.append("Content-Disposition: form-data; name=\"file"
-						+ (i++) + "\"; filename=\"" + file.getKey() + "\""
-						+ LINEND);
-				sb1.append("Content-Type: application/octet-stream; charset="
-						+ CHARSET + LINEND);
-				sb1.append(LINEND);
-				outStream.write(sb1.toString().getBytes());
-
-				InputStream is = new FileInputStream(file.getValue());
-				byte[] buffer = new byte[1024];
-				int len = 0;
-				int percent;
-				Log.i("xiao", "length = " + length);
-				int number = 0;
-				while ((len = is.read(buffer)) != -1) {
-					outStream.write(buffer, 0, len);
-					number += len;
-					percent = (int)(number * 100 / length);
-					Log.i("xiao", "len = " + len);
-					Log.i("xiao", "percent = " + percent);
-					Message localMessage = new Message();
-					localMessage.what = percent;
-					mUpdateUiHandler.sendMessage(localMessage);
-				}
-
-				is.close();
-				outStream.write(LINEND.getBytes());
-			}
-		}
-		// 请求结束标志
-		byte[] end_data = (PREFIX + BOUNDARY + PREFIX + LINEND).getBytes();
-		outStream.write(end_data);
-		outStream.flush();
-
-		// 得到响应码
-		int res = conn.getResponseCode();
-		InputStream in = null;
-		if (res == 200) {
-			in = conn.getInputStream();
-			int ch;
-			StringBuilder sb2 = new StringBuilder();
-			while ((ch = in.read()) != -1) {
-				sb2.append((char) ch);
-			}
-		}
-		return in == null ? null : in.toString();
-	}
-	
 	public boolean onKeyDown(int keyCode, KeyEvent event){
     	if(keyCode == KeyEvent.KEYCODE_BACK){
     		Intent localIntent = new Intent();

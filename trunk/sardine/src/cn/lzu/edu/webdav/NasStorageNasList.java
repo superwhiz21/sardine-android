@@ -45,7 +45,9 @@ public class NasStorageNasList extends Activity {
 
 	public static final int DELETE_TOAST = 3;
 	public static final int PASTE_TOAST = 7;
-	private String ROOT = "http://202.201.1.135:30080/mnt/li/lzu1/s1/";
+	private String ROOT = "http://192.168.2.250/load/";
+	private String USERNAME="leeagle87@126.com";
+	private String PASSWORD="nopasswd";
 	private String REMOTEDOWNROOT = ROOT;
 	private String LOCALDOWNROOT = "/mnt/sdcard/weslab/";
 	private List<DavResource> resources = null;
@@ -128,7 +130,7 @@ public class NasStorageNasList extends Activity {
 	}
 
 	public void connecting() {
-		sardine = SardineFactory.begin("lzu", "nopasswd");
+		sardine = SardineFactory.begin(USERNAME, PASSWORD);
 	}
 
 	public void listFile() {
@@ -459,8 +461,8 @@ public class NasStorageNasList extends Activity {
 
 					public void onClick(DialogInterface dialog, int which) {
 						try {
-							sardine.move(ROOT + fileName,
-									ROOT + localFileName.getText());
+							sardine.move(ROOT + fileName.replaceAll(" ", "%20"),
+									ROOT + localFileName.getText().toString().replaceAll(" ", "%20"));
 						} catch (IOException e) {
 							e.printStackTrace();
 						}
