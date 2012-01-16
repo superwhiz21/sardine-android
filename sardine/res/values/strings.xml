@@ -28,6 +28,7 @@
     <string name="paste">Paste</string>
     <string name="title">兰州韦尔斯信息科技有限公司 \n手机云存储</string>
     <string name="upload_toast">Upload file successfully</string>
+    <string name="download_toast">Download to /mnt/sdcard/weslab/</string>
     <string name="delete_toast">Delete file successfully</string>
     <string name="cannotpaste_toast">Can not paste, no file in cache</string>
     <string name="paste_toast">Paste successfully</string>

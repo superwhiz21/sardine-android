@@ -1,19 +1,15 @@
 package cn.lzu.edu.webdav;
 
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import com.googlecode.sardine.Sardine;
 import com.googlecode.sardine.SardineFactory;
@@ -47,8 +43,8 @@ import android.widget.AdapterView.OnItemLongClickListener;
 public class NasStorageLocalList extends Activity {
     public static final int UPLOAD_TOAST = 1;
 	
-	private String ROOT = "http://192.168.2.250/load/";
-	private String USERNAME="leeagle87@126.com";
+	private String ROOT = "http://202.201.1.135:30080/mnt/li/lzu1/s1/";
+	private String USERNAME="lzu";
 	private String PASSWORD="nopasswd";
 	private Sardine sardine = null;
 	
