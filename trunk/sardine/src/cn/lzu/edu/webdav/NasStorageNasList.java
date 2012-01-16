@@ -43,10 +43,11 @@ import android.widget.AdapterView.OnItemClickListener;
 
 public class NasStorageNasList extends Activity {
 
-	public static final int DELETE_TOAST = 3;
-	public static final int PASTE_TOAST = 7;
-	private String ROOT = "http://192.168.2.250/load/";
-	private String USERNAME="leeagle87@126.com";
+	private static final int DOWNLOAD_TOAST = 2;
+	private static final int DELETE_TOAST = 3;
+	private static final int PASTE_TOAST = 7;
+	private String ROOT = "http://202.201.1.135:30080/mnt/li/lzu1/s1/";
+	private String USERNAME="lzu";
 	private String PASSWORD="nopasswd";
 	private String REMOTEDOWNROOT = ROOT;
 	private String LOCALDOWNROOT = "/mnt/sdcard/weslab/";
@@ -110,6 +111,9 @@ public class NasStorageNasList extends Activity {
 			progressDialog.dismiss();
 			listFile();
 			switch (message.what) {
+			case 2:
+				Toast.makeText(NasStorageNasList.this, localResources.getString(R.string.download_toast), Toast.LENGTH_SHORT).show();
+				break;
 			case 3:
 				Toast.makeText(NasStorageNasList.this,
 						localResources.getString(R.string.delete_toast),
@@ -140,7 +144,7 @@ public class NasStorageNasList extends Activity {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		if (resources.isEmpty()) {
+		if (resources == null) {
 			error();
 		}
 		fillFile();
@@ -318,7 +322,11 @@ public class NasStorageNasList extends Activity {
 		public void onItemClick(AdapterView<?> arg0, View arg1, int arg2,
 				long arg3) {
 			mPresentDown = arg2;
-			changeDirectory();
+			if(recordItem.get(mPresentDown).get("type").toString().equalsIgnoreCase("file")) {
+				createFunctionDialog().show();
+			} else {
+				changeDirectory();
+			}
 
 		}
 
@@ -361,6 +369,7 @@ public class NasStorageNasList extends Activity {
 			download((String) recordItem.get(mPresentDown).get("name"),
 					(String) recordItem.get(mPresentDown).get("type"));
 			Message msg_listData = new Message();
+			msg_listData.what = DOWNLOAD_TOAST;
 			handler.sendMessageDelayed(msg_listData, 500);
 		}
 
@@ -380,7 +389,7 @@ public class NasStorageNasList extends Activity {
 	}
 
 	public void deleteFileFromDir(String fileName, String type) {
-		String destDel = ROOT + fileName;
+		String destDel = (ROOT + fileName).replaceAll(" ", "%20");
 		if (type.equals("httpd/unix-directory")) {
 			destDel = destDel + "/";
 		}
